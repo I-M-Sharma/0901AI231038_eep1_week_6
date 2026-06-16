@@ -1,96 +1,138 @@
-import sys
+```python
 import os
-import collections
+import sys
 
-def process_files(folder_path):
-    file_data = {}
-    if not os.path.exists(folder_path):
-        print(f"Folder '{folder_path}' does not exist.")
-        sys.exit(1)
-        
+def load_files(folder_path):
+    files = {}
+
     for filename in os.listdir(folder_path):
         if filename.endswith(".txt"):
             filepath = os.path.join(folder_path, filename)
-            with open(filepath, 'r', encoding='utf-8') as f:
-                file_data[filename] = f.read()
-    return file_data
 
-def handle_stats(filename, file_data):
-    if filename not in file_data:
-        print(f"Error: {filename} not found.")
-        return
-    text = file_data[filename]
-    lines = len(text.splitlines())
-    words = len(text.split())
-    chars = len(text)
-    print(f"Stats for {filename}:")
-    print(f"Lines: {lines}")
-    print(f"Words: {words}")
-    print(f"Characters: {chars}")
+            with open(filepath, "r", encoding="utf-8") as f:
+                files[filename] = f.read()
 
-def handle_top(n, filename, file_data):
-    if filename not in file_data:
-        print(f"Error: {filename} not found.")
+    return files
+
+
+def stats(filename, files):
+    if filename not in files:
+        print("File not found.")
         return
+
+    text = files[filename]
+
+    line_count = len(text.splitlines())
+    word_count = len(text.split())
+    char_count = len(text)
+
+    print("Lines:", line_count)
+    print("Words:", word_count)
+    print("Characters:", char_count)
+
+
+def top_words(n, filename, files):
+    if filename not in files:
+        print("File not found.")
+        return
+
     try:
         n = int(n)
     except ValueError:
-        print("Error: n must be an integer.")
+        print("n must be an integer.")
         return
-        
-    text = file_data[filename].lower()
-    words = text.split()
-    counter = collections.Counter(words)
-    print(f"Top {n} words in {filename}:")
-    for word, count in counter.most_common(n):
-        print(f"{word}: {count}")
 
-def handle_search(word, file_data):
+    words = files[filename].lower().split()
+
+    counts = {}
+
+    for word in words:
+        if word in counts:
+            counts[word] += 1
+        else:
+            counts[word] = 1
+
+    sorted_words = sorted(
+        counts.items(),
+        key=lambda item: item[1],
+        reverse=True
+    )
+
+    print("Top", n, "words:")
+
+    for word, count in sorted_words[:n]:
+        print(word, count)
+
+
+def search(word, files):
     word = word.lower()
-    found_in = []
-    for filename, text in file_data.items():
-        if word in text.lower().split():
-            found_in.append(filename)
-    
-    if found_in:
-        print(f"Word '{word}' found in:")
-        for fn in sorted(found_in):
-            print(f"- {fn}")
+
+    found_files = []
+
+    for filename in files:
+        words = files[filename].lower().split()
+
+        if word in words:
+            found_files.append(filename)
+
+    if len(found_files) == 0:
+        print("Word not found in any file.")
     else:
-        print(f"Word '{word}' not found in any files.")
+        print("Found in:")
+
+        for filename in found_files:
+            print(filename)
+
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) != 2:
         print("Usage: python analyze.py <folder_path>")
-        sys.exit(1)
-        
+        return
+
     folder_path = sys.argv[1]
-    file_data = process_files(folder_path)
-    
-    print("Welcome to the interactive text analyzer!")
+
+    if not os.path.exists(folder_path):
+        print("Folder does not exist.")
+        return
+
+    files = load_files(folder_path)
+
+    print("Interactive Text Corpus Analyzer")
+
     while True:
-        try:
-            command_line = input("> ").strip()
-        except EOFError:
-            break
-            
-        if not command_line:
+        command = input("> ").strip()
+
+        if command == "":
             continue
-            
-        parts = command_line.split()
-        cmd = parts[0].lower()
-        
-        if cmd == "quit":
+
+        parts = command.split()
+
+        if parts[0].lower() == "quit":
             print("Goodbye!")
             break
-        elif cmd == "stats" and len(parts) == 2:
-            handle_stats(parts[1], file_data)
-        elif cmd == "top" and len(parts) == 3:
-            handle_top(parts[1], parts[2], file_data)
-        elif cmd == "search" and len(parts) == 2:
-            handle_search(parts[1], file_data)
+
+        elif parts[0].lower() == "stats":
+            if len(parts) != 2:
+                print("Usage: stats <filename>")
+            else:
+                stats(parts[1], files)
+
+        elif parts[0].lower() == "top":
+            if len(parts) != 3:
+                print("Usage: top <n> <filename>")
+            else:
+                top_words(parts[1], parts[2], files)
+
+        elif parts[0].lower() == "search":
+            if len(parts) != 2:
+                print("Usage: search <word>")
+            else:
+                search(parts[1], files)
+
         else:
             print("Invalid command.")
 
+
 if __name__ == "__main__":
     main()
+```
